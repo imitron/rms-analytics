@@ -28,8 +28,196 @@
 
 API и документация github: https://docs.github.com/en/rest
 
-# Динамика звезд репозиториев
+# Компания за отмену Столлмана управляется из одного центра
 
 Репозиторий противников Столлмана был создан Tue 23 Mar 2021 10:42:36 AM PDT, сторонников - Tue 23 Mar 2021 01:23:39 PM PDT. Видно, что репозиторий противников практически сразу начал активно набирать звезды. У репозитория сторонников был длительный период, когда звезды набирались медленно, но потом (видимо после публикации в соц сетях) процесс пошел много быстрее и количество звезд быстро обогнало противников.
 
+[Картинка]
 
+```bash
+\#!/bin/bash
+
+set -ue
+
+page=1
+
+owner<sub>repo</sub>=$1
+
+while true; do
+    curl -s -H "Authorization: token $GITHUB<sub>OAUTH</sub>" \\
+        -H "Accept: application/vnd.github.v3.star+json" \\
+        "<https://api.github.com/repos/$owner_repo/stargazers?per_page=100&page=$page>"| \\
+        jq -r .[].starred<sub>at</sub> | grep . || break
+    ((page++)) || true
+done
+
+echo "epoch,con" >con.stars.csv
+./get-stars.sh 'rms-open-letter/rms-open-letter.github.io'|while read a; do date -d $a +%s; done|sort -n|cat -n|awk '{print $2","$1}' >>con.stars.csv
+
+echo "epoch,pro" >pro.stars.csv
+./get-stars.sh 'rms-support-letter/rms-support-letter.github.io'|while read a; do date -d $a +%s; done|sort -n|cat -n|awk '{print $2","$1}' >>pro.stars.csv
+
+join -t, -e '' -o auto -a1 -a2 con.stars.csv pro.stars.csv >joined.stars.csv
+```
+
+При этом спустя много дней репозиторий сторонников продолжает набирать звезды, в то время как у противников процесс сильно замедлился. Из этого можно сделать предположение, что процесс раскрутки инициативы противников был заранее интенсифицирован рассылкой писем и сообщений в социальных сетях, и замедлился как только доступная аудитория была выбрана.
+
+Инициатива сторонников по-видимому опирается на широкие массы людей без единого управляющего центра. Этим можно объяснить медленный темп набора звезд в начале и то, что звезды до сих пор добавляются - новости расходятся от свежих вовлеченных участников.
+                                                                                                                          
+Теперь давайте посмотрим на активность в самих репозиториях.                                                            
+                                                                                                                          
+На момент написания этой статьи было 1345 комиттеров противников и 5000+ коммиттеров сторонников. Скачиваем историю коммитов:
+
+```python
+\#!/usr/bin/env python
+
+import os
+import requests
+import json
+import sys
+
+repo = sys.argv[1]
+
+headers = {'Authorization': 'token {}'.format(os.environ["GITHUB<sub>OAUTH</sub>"])}
+commits = []
+page = 0
+while page < 300:
+    page += 1
+    data = requests.get('https://api.github.com/repos/{}/commits?per<sub>page</sub>=100&page={}'.format(repo, page), headers=headers).json()
+    if len(data) == 0:
+        break
+    commits += data
+
+print(json.dumps(commits, indent=4))
+
+./get-commits.py 'rms-open-letter/rms-open-letter.github.io' >con.commits.json
+./get-commits.py 'rms-support-letter/rms-support-letter.github.io' >pro.commits.json
+```
+
+Посмотрим на изменение количества коммитов от времени:
+
+```bash
+jq -r .[].commit.author.date pro.commits.json|sort -u|cat -n|awk '{print $2","$1}'|sed -e 's/T/ *' -e 's/Z/*' >pro.commits.csv
+jq -r .[].commit.author.date con.commits.json|sort -u|cat -n|awk '{print $2","$1}'|sed -e 's/T/ *' -e 's/Z/*' >con.commits.csv
+join -t, -e '' -o auto -a1 -a2 con.commits.csv pro.commits.csv >joined.commits.csv
+```
+[Картинка]
+
+Видно, что репозиторий сторонников гораздо активнее. Коммитов в репозиторий противников за последнее время практически не было. Репозиторий сторонников продолжает обновляться. 
+
+Посмотрим на распределение коммитов по дням недели.
+
+```bash
+jq -r .[].commit.author.date con.commits.json |./weekday-from-date.py >con.rms<sub>commits.csv</sub>
+jq -r .[].commit.author.date pro.commits.json |./weekday-from-date.py >pro.rms<sub>commits.csv</sub>
+join -t, con.rms<sub>commits.csv</sub> pro.rms<sub>commits.csv</sub> >joined.rms<sub>commits.csv</sub>
+```
+
+[Картинка]
+
+Активность сторонников значительно менее вариативная. Коммиты совершаются во все дни недели. 
+
+Aктивность противников Столлмана сильно снижается на выходных, зато в среду мы видим пик. Это можно объяснить тем, что во многих компаниях среда это no meeting day.
+
+Скачиваем индивидуальные данные для каждого юзера, а также его последние 100 действий:
+
+```bash
+jq -r .[].author.login con.commits.json|sort -u >con.logins
+jq -r .[].author.login pro.commits.json|sort -u >pro.logins
+
+\#!/bin/bash
+
+set -ue
+
+script<sub>dir</sub>=$(dirname $(realpath $0))
+
+get<sub>data</sub>() {
+    local data<sub>dir</sub>=$script<sub>dir</sub>/$1 userdata events
+    for x in $(cat $1.logins); do
+        userdata=$data<sub>dir</sub>/$x.userdata
+        [ -r $userdata ] && continue
+        curl -s -H "Authorization: token $GITHUB<sub>OAUTH</sub>" "<https://api.github.com/users/$x>" >$userdata
+        sleep 1
+        events=$data<sub>dir</sub>/$x.events
+        [ -r $events ] && continue
+        curl -s -H "Authorization: token $GITHUB<sub>OAUTH</sub>" "<https://api.github.com/users/$x/events?per_page=100>" >$events
+        sleep 1
+    done
+}
+
+get<sub>data</sub> $1
+
+./get-user-events-data.sh con
+./get-user-events-data.sh pro
+```
+
+Пример данных юзера, выгруженных из гитхаба:
+
+```json
+{
+  "login": "zyxw59",
+  "id": 3157093,
+  "node<sub>id</sub>": "MDQ6VXNlcjMxNTcwOTM=",
+  "avatar<sub>url</sub>": "<https://avatars.githubusercontent.com/u/3157093?v=4>",
+  "gravatar<sub>id</sub>": "",
+  "url": "<https://api.github.com/users/zyxw59>",
+  "html<sub>url</sub>": "<https://github.com/zyxw59>",
+  "followers<sub>url</sub>": "<https://api.github.com/users/zyxw59/followers>",
+  "following<sub>url</sub>": "<https://api.github.com/users/zyxw59/following{/other_user>}",
+  "gists<sub>url</sub>": "<https://api.github.com/users/zyxw59/gists{/gist_id>}",
+  "starred<sub>url</sub>": "<https://api.github.com/users/zyxw59/starred{/owner}{/repo>}",
+  "subscriptions<sub>url</sub>": "<https://api.github.com/users/zyxw59/subscriptions>",
+  "organizations<sub>url</sub>": "<https://api.github.com/users/zyxw59/orgs>",
+  "repos<sub>url</sub>": "<https://api.github.com/users/zyxw59/repos>",
+  "events<sub>url</sub>": "<https://api.github.com/users/zyxw59/events{/privacy>}",
+  "received<sub>events</sub><sub>url</sub>": "<https://api.github.com/users/zyxw59/received_events>",
+  "type": "User",
+  "site<sub>admin</sub>": false,
+  "name": "Emily Crandall Fleischman",
+  "company": "Commure",
+  "blog": "",
+  "location": null,
+  "email": "emilycf@mit.edu",
+  "hireable": null,
+  "bio": null,
+  "twitter<sub>username</sub>": null,
+  "public<sub>repos</sub>": 24,
+  "public<sub>gists</sub>": 0,
+  "followers": 2,
+  "following": 12,
+  "created<sub>at</sub>": "2012-12-31T05:33:30Z",
+  "updated<sub>at</sub>": "2021-03-14T01:53:51Z"
+}
+```
+
+В таблице ниже приводится процент пользователей, у которых заполнены поля twitter_username>, company, bio и blog:
+
+<table border="2" cellspacing="0" cellpadding="6">
+<tbody>
+<tr>
+<td>поле</td>
+<td>противник</td>
+<td>сторонник</td>
+</tr>
+<tr>
+<td>twitterusername</td>
+<td>31%</td>
+<td>8%</td>
+</tr>
+<tr>
+<td>company</td>
+<td>48%</td>
+<td>20%</td>
+</tr>
+<tr>
+<td>bio</td>
+<td>53%</td>
+<td>31%</td>
+</tr>
+<tr>
+<td>blog</td>
+<td>63%</td>
+<td>31%</td>
+</tr>
+</tbody>
+</table>
