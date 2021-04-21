@@ -41,13 +41,13 @@ set -ue
 
 page=1
 
-owner<sub>repo</sub>=$1
+owner_repo=$1
 
 while true; do
-    curl -s -H "Authorization: token $GITHUB<sub>OAUTH</sub>" \\
+    curl -s -H "Authorization: token $GITHUB_OAUTH_" \\
         -H "Accept: application/vnd.github.v3.star+json" \\
         "<https://api.github.com/repos/$owner_repo/stargazers?per_page=100&page=$page>"| \\
-        jq -r .[].starred<sub>at</sub> | grep . || break
+        jq -r .[].starred_at_ | grep . || break
     ((page++)) || true
 done
 
@@ -78,12 +78,12 @@ import sys
 
 repo = sys.argv[1]
 
-headers = {'Authorization': 'token {}'.format(os.environ["GITHUB<sub>OAUTH</sub>"])}
+headers = {'Authorization': 'token {}'.format(os.environ["GITHUB_OAUTH"])}
 commits = []
 page = 0
 while page < 300:
     page += 1
-    data = requests.get('https://api.github.com/repos/{}/commits?per<sub>page</sub>=100&page={}'.format(repo, page), headers=headers).json()
+    data = requests.get('https://api.github.com/repos/{}/commits?per_page=100&page={}'.format(repo, page), headers=headers).json()
     if len(data) == 0:
         break
     commits += data
@@ -108,9 +108,9 @@ join -t, -e '' -o auto -a1 -a2 con.commits.csv pro.commits.csv >joined.commits.c
 Посмотрим на распределение коммитов по дням недели.
 
 ```bash
-jq -r .[].commit.author.date con.commits.json |./weekday-from-date.py >con.rms<sub>commits.csv</sub>
-jq -r .[].commit.author.date pro.commits.json |./weekday-from-date.py >pro.rms<sub>commits.csv</sub>
-join -t, con.rms<sub>commits.csv</sub> pro.rms<sub>commits.csv</sub> >joined.rms<sub>commits.csv</sub>
+jq -r .[].commit.author.date con.commits.json |./weekday-from-date.py >con.rms_commits.csv
+jq -r .[].commit.author.date pro.commits.json |./weekday-from-date.py >pro.rms_commits.csv
+join -t, con.rms_commits.csv pro.rms_commits.csv >joined.rms_commits.csv
 ```
 
 [Картинка]
@@ -129,23 +129,23 @@ jq -r .[].author.login pro.commits.json|sort -u >pro.logins
 
 set -ue
 
-script<sub>dir</sub>=$(dirname $(realpath $0))
+script_dir=$(dirname $(realpath $0))
 
-get<sub>data</sub>() {
-    local data<sub>dir</sub>=$script<sub>dir</sub>/$1 userdata events
+get_data() {
+    local data_dir=$script_dir/$1 userdata events
     for x in $(cat $1.logins); do
-        userdata=$data<sub>dir</sub>/$x.userdata
+        userdata=$data_dir/$x.userdata
         [ -r $userdata ] && continue
-        curl -s -H "Authorization: token $GITHUB<sub>OAUTH</sub>" "<https://api.github.com/users/$x>" >$userdata
+        curl -s -H "Authorization: token $GITHUB_OAUTH" "<https://api.github.com/users/$x>" >$userdata
         sleep 1
-        events=$data<sub>dir</sub>/$x.events
+        events=$data_dir/$x.events
         [ -r $events ] && continue
-        curl -s -H "Authorization: token $GITHUB<sub>OAUTH</sub>" "<https://api.github.com/users/$x/events?per_page=100>" >$events
+        curl -s -H "Authorization: token $GITHUB_OAUTH" "<https://api.github.com/users/$x/events?per_page=100>" >$events
         sleep 1
     done
 }
 
-get<sub>data</sub> $1
+get_data $1
 
 ./get-user-events-data.sh con
 ./get-user-events-data.sh pro
@@ -157,22 +157,22 @@ get<sub>data</sub> $1
 {
   "login": "zyxw59",
   "id": 3157093,
-  "node<sub>id</sub>": "MDQ6VXNlcjMxNTcwOTM=",
-  "avatar<sub>url</sub>": "<https://avatars.githubusercontent.com/u/3157093?v=4>",
-  "gravatar<sub>id</sub>": "",
-  "url": "<https://api.github.com/users/zyxw59>",
-  "html<sub>url</sub>": "<https://github.com/zyxw59>",
-  "followers<sub>url</sub>": "<https://api.github.com/users/zyxw59/followers>",
-  "following<sub>url</sub>": "<https://api.github.com/users/zyxw59/following{/other_user>}",
-  "gists<sub>url</sub>": "<https://api.github.com/users/zyxw59/gists{/gist_id>}",
-  "starred<sub>url</sub>": "<https://api.github.com/users/zyxw59/starred{/owner}{/repo>}",
-  "subscriptions<sub>url</sub>": "<https://api.github.com/users/zyxw59/subscriptions>",
-  "organizations<sub>url</sub>": "<https://api.github.com/users/zyxw59/orgs>",
-  "repos<sub>url</sub>": "<https://api.github.com/users/zyxw59/repos>",
-  "events<sub>url</sub>": "<https://api.github.com/users/zyxw59/events{/privacy>}",
-  "received<sub>events</sub><sub>url</sub>": "<https://api.github.com/users/zyxw59/received_events>",
+  "node_id": "MDQ6VXNlcjMxNTcwOTM=",
+  "avatar_url": "https://avatars.githubusercontent.com/u/3157093?v=4",
+  "gravatar_id": "",
+  "url": "https://api.github.com/users/zyxw59",
+  "html_url": "https://github.com/zyxw59",
+  "followers_url": "https://api.github.com/users/zyxw59/followers",
+  "following_url": "https://api.github.com/users/zyxw59/following{/other_user}",
+  "gists_url": "https://api.github.com/users/zyxw59/gists{/gist_id}",
+  "starred_url": "https://api.github.com/users/zyxw59/starred{/owner}{/repo}",
+  "subscriptions_url": "https://api.github.com/users/zyxw59/subscriptions",
+  "organizations_url": "https://api.github.com/users/zyxw59/orgs",
+  "repos_url": "https://api.github.com/users/zyxw59/repos",
+  "events_url": "https://api.github.com/users/zyxw59/events{/privacy}",
+  "received_events_url": "https://api.github.com/users/zyxw59/received_events",
   "type": "User",
-  "site<sub>admin</sub>": false,
+  "site_admin": false,
   "name": "Emily Crandall Fleischman",
   "company": "Commure",
   "blog": "",
@@ -180,13 +180,13 @@ get<sub>data</sub> $1
   "email": "emilycf@mit.edu",
   "hireable": null,
   "bio": null,
-  "twitter<sub>username</sub>": null,
-  "public<sub>repos</sub>": 24,
-  "public<sub>gists</sub>": 0,
+  "twitter_username": null,
+  "public_repos": 24,
+  "public_gists": 0,
   "followers": 2,
   "following": 12,
-  "created<sub>at</sub>": "2012-12-31T05:33:30Z",
-  "updated<sub>at</sub>": "2021-03-14T01:53:51Z"
+  "created_at": "2012-12-31T05:33:30Z",
+  "updated_at": "2021-03-14T01:53:51Z"
 }
 ```
 
