@@ -236,3 +236,33 @@ get_data $1
     <tr> <td>following</td> <td>30</td><td>8</td> <td>14</td> <td>1</td> </tr> 
     </tbody> 
 </table>
+
+Опять видно, что противники Столлмана гораздо активнее сторонников на гитхабе. Можно предположить, что это разработчики популярных проектов, деятельность которых интересна многим. Видимо именно это объясняет столь высокое значение поля followers. Также обращает на себя внимание, что у противников соотношение followers / following больше 3, в то время как у сторонников оно составляет 1.1. Давайте воспользуемся полем events_url, чтобы скачать историю действий юзеров.                              
+                                                                                                                                                        
+Теперь давайти посмотрим на действия юзеров. Данных скачано много и анализировать их можно множеством способов. Можно проверить активность юзеров по дням недели, чтобы проверить как эти данные коррелируют с активностью, специфичной для репозиториев "за" и "против" Столлмана.
+
+```python
+\#!/usr/bin/env python                                                                                                                                  
+                                                                                                                                                        
+import datetime                                                                                                                                         
+import sys                                                                                                                                              
+                                                                                                                                                        
+out = [0] \* 7                                                                                                                                          
+total = 0                                                                                                                                               
+                                                                                                                                                        
+for line in sys.stdin.readlines():                                                                                                                      
+    weekday = datetime.datetime.strptime(line.strip(), '%Y-%m-%dT%H:%M:%SZ').weekday()                                                                  
+    out[weekday] += 1                                                                                                                                   
+    total += 1                                                                                                                                          
+                                                                                                                                                        
+for day, count in enumerate(out):                                                                                                                       
+    print("{},{}".format(day, count / total))                                                                                                           
+                                                                                                                                                        
+jq -r .[].created<sub>at</sub> con/\*.events|./weekday-from-date.py >con.event<sub>day.normalized.csv</sub>                                             
+jq -r .[].created<sub>at</sub> pro/\*.events|./weekday-from-date.py >pro.event<sub>day.normalized.csv</sub>                                             
+join -t, con.event<sub>day.normalized.csv</sub> pro.event<sub>day.normalized.csv</sub>  
+```
+
+[Картинка]
+
+Видно, что тренд сохранился: активность противников резко снижается по выходным. Можно предполагать, что они используют гитхаб на работе и, возможно, работают над open source проектами за зарплату. Если это предположение верно, их мнение может быть обусловлено отбором, который проводят компании, нанимающие программистов для работы над open source проектами.                                                                                                
