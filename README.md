@@ -229,10 +229,10 @@ get_data $1
 <table>
   <tbody> 
     <tr> <td>поле</td> <td >противник</td> <td>противник</td> <td >сторонник</td><td>противник</td></tr>
-    <tr> <td >&#xa0;</td> <td>average</td> <td >median</td> <td>average</td> <td >median</td> </tr>
-    <tr> <td >public<sub>repos</sub></td> <td>62</td> <td>34</td> <td>21</td> <td>9</td> </tr>
-    <tr> <td >public<sub>gists</sub></td> <td>18</td> <td>4</td> <td>4</td> <td>0</td> </tr>
-    <tr> <td >followers</td> <td>105</td> <td>23</td> <td>16</td> <td>2</td> </tr>
-    <tr> <td >following</td> <td >30</td><td>8</td> <td>14</td> <td>1</td> </tr> 
+    <tr> <td></td> <td>average</td> <td>median</td> <td>average</td> <td>median</td> </tr>
+    <tr> <td>public_repos</td> <td>62</td> <td>34</td> <td>21</td> <td>9</td> </tr>
+    <tr> <td>public_gists</td> <td>18</td> <td>4</td> <td>4</td> <td>0</td> </tr>
+    <tr> <td>followers</td> <td>105</td> <td>23</td> <td>16</td> <td>2</td> </tr>
+    <tr> <td>following</td> <td>30</td><td>8</td> <td>14</td> <td>1</td> </tr> 
     </tbody> 
 </table>
