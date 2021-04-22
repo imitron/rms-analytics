@@ -16,7 +16,7 @@
 
 Мы попытались проверить некоторые из этих предположений и приглашаем всех, кто заинтересовался, проверить остальные предположения и вносить (и проверять) любые другие.
 
-Мы создали репозиторий (ссылка), в котором будет проходить работа (https://github.com/imitron/rms-analytics/), в нем же лежит эта статья, ее копия на хабре будет актуализироваться по мере добавления пулл-реквестов. Присоединяйтесь к исследованию!
+Мы создали репозиторий (https://github.com/imitron/rms-analytics/), в котором будет проходить работа. В нем же лежит эта статья, ее копия на хабре будет актуализироваться по мере добавления пулл-реквестов. Присоединяйтесь к исследованию!
 
 Далее будут детали.
 
@@ -35,7 +35,8 @@ API и документация github: https://docs.github.com/en/rest
 [Картинка]
 
 ```bash
-\#!/bin/bash
+$ cat get-stars.sh
+#!/bin/bash
 
 set -ue
 
@@ -51,25 +52,24 @@ while true; do
     ((page++)) || true
 done
 
-echo "epoch,con" >con.stars.csv
-./get-stars.sh 'rms-open-letter/rms-open-letter.github.io'|while read a; do date -d $a +%s; done|sort -n|cat -n|awk '{print $2","$1}' >>con.stars.csv
-
-echo "epoch,pro" >pro.stars.csv
-./get-stars.sh 'rms-support-letter/rms-support-letter.github.io'|while read a; do date -d $a +%s; done|sort -n|cat -n|awk '{print $2","$1}' >>pro.stars.csv
-
-join -t, -e '' -o auto -a1 -a2 con.stars.csv pro.stars.csv >joined.stars.csv
+$ echo "epoch,con" >con.stars.csv
+$ ./get-stars.sh 'rms-open-letter/rms-open-letter.github.io'|while read a; do date -d $a +%s; done|sort -n|cat -n|awk '{print $2","$1}' >>con.stars.csv
+$ echo "epoch,pro" >pro.stars.csv
+$ ./get-stars.sh 'rms-support-letter/rms-support-letter.github.io'|while read a; do date -d $a +%s; done|sort -n|cat -n|awk '{print $2","$1}' >>pro.stars.csv
+$ join -t, -e '' -o auto -a1 -a2 con.stars.csv pro.stars.csv >joined.stars.csv
 ```
 
 При этом спустя много дней репозиторий сторонников продолжает набирать звезды, в то время как у противников процесс сильно замедлился. Из этого можно сделать предположение, что процесс раскрутки инициативы противников был заранее интенсифицирован рассылкой писем и сообщений в социальных сетях, и замедлился как только доступная аудитория была выбрана.
 
 Инициатива сторонников по-видимому опирается на широкие массы людей без единого управляющего центра. Этим можно объяснить медленный темп набора звезд в начале и то, что звезды до сих пор добавляются - новости расходятся от свежих вовлеченных участников.
-
-Теперь давайте посмотрим на активность в самих репозиториях.
-
+                                                                                                                          
+Теперь давайте посмотрим на активность в самих репозиториях.                                                            
+                                                                                                                          
 На момент написания этой статьи было 1345 комиттеров противников и 5000+ коммиттеров сторонников. Скачиваем историю коммитов:
 
 ```python
-\#!/usr/bin/env python
+$ cat get-commits.py
+#!/usr/bin/env python
 
 import os
 import requests
@@ -90,42 +90,42 @@ while page < 300:
 
 print(json.dumps(commits, indent=4))
 
-./get-commits.py 'rms-open-letter/rms-open-letter.github.io' >con.commits.json
-./get-commits.py 'rms-support-letter/rms-support-letter.github.io' >pro.commits.json
+$ ./get-commits.py 'rms-open-letter/rms-open-letter.github.io' >con.commits.json
+$ ./get-commits.py 'rms-support-letter/rms-support-letter.github.io' >pro.commits.json
 ```
 
 Посмотрим на изменение количества коммитов от времени:
 
 ```bash
-jq -r .[].commit.author.date pro.commits.json|sort -u|cat -n|awk '{print $2","$1}'|sed -e 's/T/ *' -e 's/Z/*' >pro.commits.csv
-jq -r .[].commit.author.date con.commits.json|sort -u|cat -n|awk '{print $2","$1}'|sed -e 's/T/ *' -e 's/Z/*' >con.commits.csv
-join -t, -e '' -o auto -a1 -a2 con.commits.csv pro.commits.csv >joined.commits.csv
+$ jq -r .[].commit.author.date pro.commits.json|sort -u|cat -n|awk '{print $2","$1}'|sed -e 's/T/ *' -e 's/Z/*' >pro.commits.csv
+$ jq -r .[].commit.author.date con.commits.json|sort -u|cat -n|awk '{print $2","$1}'|sed -e 's/T/ *' -e 's/Z/*' >con.commits.csv
+$ join -t, -e '' -o auto -a1 -a2 con.commits.csv pro.commits.csv >joined.commits.csv
 ```
 [Картинка]
 
-Видно, что репозиторий сторонников гораздо активнее. Коммитов в репозиторий противников за последнее время практически не было. Репозиторий сторонников продолжает обновляться.
+Видно, что репозиторий сторонников гораздо активнее. Коммитов в репозиторий противников за последнее время практически не было. Репозиторий сторонников продолжает обновляться. 
 
 Посмотрим на распределение коммитов по дням недели.
 
 ```bash
-jq -r .[].commit.author.date con.commits.json |./weekday-from-date.py >con.rms_commits.csv
-jq -r .[].commit.author.date pro.commits.json |./weekday-from-date.py >pro.rms_commits.csv
-join -t, con.rms_commits.csv pro.rms_commits.csv >joined.rms_commits.csv
+$ jq -r .[].commit.author.date con.commits.json |./weekday-from-date.py >con.rms_commits.csv
+$ jq -r .[].commit.author.date pro.commits.json |./weekday-from-date.py >pro.rms_commits.csv
+$ join -t, con.rms_commits.csv pro.rms_commits.csv >joined.rms_commits.csv
 ```
 
 [Картинка]
 
-Активность сторонников значительно менее вариативная. Коммиты совершаются во все дни недели.
+Активность сторонников значительно менее вариативная. Коммиты совершаются во все дни недели. 
 
 Aктивность противников Столлмана сильно снижается на выходных, зато в среду мы видим пик. Это можно объяснить тем, что во многих компаниях среда это no meeting day.
 
 Скачиваем индивидуальные данные для каждого юзера, а также его последние 100 действий:
 
 ```bash
-jq -r .[].author.login con.commits.json|sort -u >con.logins
-jq -r .[].author.login pro.commits.json|sort -u >pro.logins
-
-\#!/bin/bash
+$ jq -r .[].author.login con.commits.json|sort -u >con.logins
+$ jq -r .[].author.login pro.commits.json|sort -u >pro.logins
+$ cat get-user-events-data.sh
+#!/bin/bash
 
 set -ue
 
@@ -147,8 +147,8 @@ get_data() {
 
 get_data $1
 
-./get-user-events-data.sh con
-./get-user-events-data.sh pro
+$ ./get-user-events-data.sh con
+$ ./get-user-events-data.sh pro
 ```
 
 Пример данных юзера, выгруженных из гитхаба:
@@ -222,48 +222,48 @@ get_data $1
 </tbody>
 </table>
 
-Противники значимо более социально активны. Можно предположить что участие в социальных акциях, таких как подписание письма для сторонников Столлмана является более непривычным актом чем для противников.
+Противники значимо более социально активны. Можно предположить что участие в социальных акциях, таких как подписание письма для сторонников Столлмана является менее привычным актом чем для противников.
 
-Посмотрим на поля public_repos, public_gists, followers и following:
+Посмотрим на поля public_repos, public_gists, followers и following: 
 
 <table>
-  <tbody>
+  <tbody> 
     <tr> <td>поле</td> <td >противник</td> <td>противник</td> <td >сторонник</td><td>противник</td></tr>
     <tr> <td></td> <td>average</td> <td>median</td> <td>average</td> <td>median</td> </tr>
     <tr> <td>public_repos</td> <td>62</td> <td>34</td> <td>21</td> <td>9</td> </tr>
     <tr> <td>public_gists</td> <td>18</td> <td>4</td> <td>4</td> <td>0</td> </tr>
     <tr> <td>followers</td> <td>105</td> <td>23</td> <td>16</td> <td>2</td> </tr>
-    <tr> <td>following</td> <td>30</td><td>8</td> <td>14</td> <td>1</td> </tr>
-    </tbody>
+    <tr> <td>following</td> <td>30</td><td>8</td> <td>14</td> <td>1</td> </tr> 
+    </tbody> 
 </table>
 
-Опять видно, что противники Столлмана гораздо активнее сторонников на гитхабе. Можно предположить, что это разработчики популярных проектов, деятельность которых интересна многим. Видимо именно это объясняет столь высокое значение поля followers. Также обращает на себя внимание, что у противников соотношение followers / following больше 3, в то время как у сторонников оно составляет 1.1. Давайте воспользуемся полем events_url, чтобы скачать историю действий юзеров.
-
+Опять видно, что противники Столлмана гораздо активнее сторонников на гитхабе. Можно предположить, что это разработчики популярных проектов, деятельность которых интересна многим. Видимо именно это объясняет столь высокое значение поля followers. Также обращает на себя внимание, что у противников соотношение followers / following больше 3, в то время как у сторонников оно составляет 1.1. Давайте воспользуемся полем events_url, чтобы скачать историю действий юзеров.                              
+                                                                                                                                                        
 Теперь давайти посмотрим на действия юзеров. Данных скачано много и анализировать их можно множеством способов. Можно проверить активность юзеров по дням недели, чтобы проверить как эти данные коррелируют с активностью, специфичной для репозиториев "за" и "против" Столлмана.
 
 ```python
-\#!/usr/bin/env python
-
-import datetime
-import sys
-
-out = [0] \* 7
-total = 0
-
-for line in sys.stdin.readlines():
-    weekday = datetime.datetime.strptime(line.strip(), '%Y-%m-%dT%H:%M:%SZ').weekday()
-    out[weekday] += 1
-    total += 1
-
-for day, count in enumerate(out):
-    print("{},{}".format(day, count / total))
-
-jq -r .[].created<sub>at</sub> con/\*.events|./weekday-from-date.py >con.event<sub>day.normalized.csv</sub>
-jq -r .[].created<sub>at</sub> pro/\*.events|./weekday-from-date.py >pro.event<sub>day.normalized.csv</sub>
-join -t, con.event<sub>day.normalized.csv</sub> pro.event<sub>day.normalized.csv</sub>
+cat weekday-from-date.py
+#!/usr/bin/env python                                                                                                                                  
+                                                                                                                                                        
+import datetime                                                                                                                                         
+import sys                                                                                                                                              
+                                                                                                                                                        
+out = [0] \* 7                                                                                                                                          
+total = 0                                                                                                                                               
+                                                                                                                                                        
+for line in sys.stdin.readlines():                                                                                                                      
+    weekday = datetime.datetime.strptime(line.strip(), '%Y-%m-%dT%H:%M:%SZ').weekday()                                                                  
+    out[weekday] += 1                                                                                                                                   
+    total += 1                                                                                                                                          
+                                                                                                                                                        
+for day, count in enumerate(out):                                                                                                                       
+    print("{},{}".format(day, count / total))                                                                                                           
+                                                                                                                                                        
+$ jq -r .[].created<sub>at</sub> con/\*.events|./weekday-from-date.py >con.event<sub>day.normalized.csv</sub>                                             
+$ jq -r .[].created<sub>at</sub> pro/\*.events|./weekday-from-date.py >pro.event<sub>day.normalized.csv</sub>                                             
+$ join -t, con.event<sub>day.normalized.csv</sub> pro.event<sub>day.normalized.csv</sub>  
 ```
 
 [Картинка]
 
-Видно, что тренд сохранился: активность противников резко снижается по выходным. Можно предполагать, что они используют гитхаб на работе и, возможно, работают над open source проектами за зарплату. Если это предположение верно, их мнение может быть обусловлено отбором, который проводят компании, нанимающие программистов для работы над open source проектами.
-_
+Видно, что тренд сохранился: активность противников резко снижается по выходным. Можно предполагать, что они используют гитхаб на работе и, возможно, работают над open source проектами за зарплату. Если это предположение верно, их мнение может быть обусловлено отбором, который проводят компании, нанимающие программистов для работы над open source проектами.                                                                                                
